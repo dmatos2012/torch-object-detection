@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "torch-coco-detection"
+version = "0.1.0"
+description = "Use Coco dataset to train, experiment and deploy to AWS"
+authors = ["David Matos <davidmatos06@gmail.com>"]
+readme = "README.md"
+packages = [{include = "torch_coco_detection"}]
+
+[tool.poetry.dependencies]
+python = "3.6.9"
+torch = "1.7.1+cu101"
+torchvision = "0.8.2+cu101"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.4"
+pytest-cov = "^2.12.1"
+black = "^21.6-beta.0"
+isort = "^5.9.1"
+flake8 = "^3.9.2"
+bandit = "^1.7.0"
+safety = "^1.10.3"
+
+[[tool.poetry.source]]
+name = "torch_rep"
+url = "https://eternalphane.github.io/pytorch-pypi"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
