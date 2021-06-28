@@ -1,0 +1,15 @@
+[flake8]
+max-line-length = 120
+exclude =
+    .git,
+    .github,
+    coco128,
+    archive/,
+    minitrain/,
+    tests/
+    __pycache__,
+    utils/
+
+ignore=F405, F403, C901
+max-complexity = 10
+docstring_style=sphinx

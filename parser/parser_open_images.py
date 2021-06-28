@@ -1,6 +1,6 @@
 import numpy as np
 from pycocotools.coco import COCO
-import os
+
 
 # using COCO like labels
 class OpenImagesParser:
@@ -17,21 +17,24 @@ class OpenImagesParser:
         self.include_masks = False
         self.cat_id_to_label = dict()
         self.has_labels = True
-        self.yxyx = False #maybe double check. True? for NMS stuff?
+        self.yxyx = False  # maybe double check. True? for NMS stuff?
 
         self._load_annotations(ann_file)
 
     def _load_annotations(self, ann_file):
         self.coco = COCO(ann_file)
         self.cat_ids = self.coco.getCatIds()
-        self.cat_names = [c['name'] for c in self.coco.loadCats(ids=self.cat_ids)]
+        self.cat_names = [c["name"] for c in self.coco.loadCats(ids=self.cat_ids)]
         if not self.cat_ids_as_labels:
-            self.cat_id_to_label = {cat_id: i + self.label_offset for i, cat_id in enumerate(self.cat_ids)}
-        img_ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
+            self.cat_id_to_label = {
+                cat_id: i + self.label_offset for i, cat_id in enumerate(self.cat_ids)
+            }
+        img_ids_with_ann = set(_["image_id"] for _ in self.coco.anns.values())
         for img_id in sorted(self.coco.imgs.keys()):
             info = self.coco.loadImgs([img_id])[0]
-            if (min(info['width'], info['height']) < self.min_img_size or
-                    (self.ignore_empty_gt and img_id not in img_ids_with_ann)):
+            if min(info["width"], info["height"]) < self.min_img_size or (
+                self.ignore_empty_gt and img_id not in img_ids_with_ann
+            ):
                 self.img_ids_invalid.append(img_id)
                 continue
             self.img_ids.append(img_id)
@@ -47,12 +50,12 @@ class OpenImagesParser:
         bboxes = []
         bboxes_ignore = []
         cls = []
-        class_dict = {160:1, 96:2}
+        class_dict = {160: 1, 96: 2}
         for i, ann in enumerate(ann_info):
-            if ann.get('ignore', False):
+            if ann.get("ignore", False):
                 continue
-            x1, y1, w, h = ann['bbox']
-            if self.include_masks and ann['area'] <= 0:
+            x1, y1, w, h = ann["bbox"]
+            if self.include_masks and ann["area"] <= 0:
                 continue
             if w < 1 or h < 1:
                 continue
@@ -62,16 +65,19 @@ class OpenImagesParser:
             else:
                 bbox = [x1, y1, x1 + w, y1 + h]
 
-            if ann.get('iscrowd', False):
+            if ann.get("iscrowd", False):
                 if self.include_bboxes_ignore:
                     bboxes_ignore.append(bbox)
             else:
-                
+
                 bboxes.append(bbox)
-                tmp_cls = self.cat_id_to_label[ann['category_id']] if self.cat_id_to_label else ann['category_id']
+                tmp_cls = (
+                    self.cat_id_to_label[ann["category_id"]]
+                    if self.cat_id_to_label
+                    else ann["category_id"]
+                )
                 cls.append(class_dict[tmp_cls])
-                
-        
+
         if bboxes:
             bboxes = np.array(bboxes, ndmin=2, dtype=np.float32)
             cls = np.array(cls, dtype=np.int64)
@@ -89,6 +95,6 @@ class OpenImagesParser:
         ann = dict(boxes=bboxes, labels=cls)
 
         if self.include_bboxes_ignore:
-            ann['bbox_ignore'] = bboxes_ignore
+            ann["bbox_ignore"] = bboxes_ignore
 
         return ann
