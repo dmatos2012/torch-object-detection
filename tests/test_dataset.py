@@ -1,7 +1,6 @@
 from typing_extensions import OrderedDict
 
-from torch_object_detection.dataset.open_images_dataset import \
-    OpenImagesDataset
+from torch_object_detection.dataset.open_images_dataset import OpenImagesDataset
 
 
 def test_len_dataset():
