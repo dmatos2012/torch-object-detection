@@ -1,19 +1,20 @@
-from parser_open_images import OpenImagesParser
+from torch_object_detection.parser.parser_open_images import OpenImagesParser
 import numpy as np
-import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from pathlib import Path
-from loader import create_loader
+from torch_object_detection.loader import create_loader
 
 class OpenImagesDataset(Dataset):
     def __init__(self, root, splits, transform=None):
         self.root = root 
+        if isinstance(root, str):
+            self.root = Path(root)
         self.splits = splits
-        self.data_dir = root / self.splits / "data"
-        self.imgs = sorted((Path(self.root) / self.splits / "data").glob('*.jpg'))
+        self.data_dir = self.root / self.splits / "data"
+        self.imgs = sorted((self.root / self.splits / "data").glob('*.jpg'))
         # self.labels = sorted((Path(root) / "labels" / "train2017").glob('*.txt')) 
-        self.ann_file = Path(self.root) / self.splits / "labels.json" 
+        self.ann_file = self.root / self.splits / "labels.json" 
         self.parser = OpenImagesParser(self.ann_file)
         self._transform = transform
     def __getitem__(self, index):

@@ -1,5 +1,5 @@
 import torch.utils.data
-from transforms import *
+from torch_object_detection.transforms import *
 import torch
 import torch.utils
 

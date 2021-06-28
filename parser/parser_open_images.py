@@ -1,7 +1,6 @@
 import numpy as np
 from pycocotools.coco import COCO
 import os
-import torch
 
 # using COCO like labels
 class OpenImagesParser:

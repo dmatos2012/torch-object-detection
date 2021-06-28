@@ -223,6 +223,14 @@ colors = ["colorama (>=0.4.3,<0.5.0)"]
 plugins = ["setuptools"]
 
 [[package]]
+name = "light-the-torch"
+version = "0.3.1"
+description = "Install PyTorch distributions computation backend auto-detection"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "mccabe"
 version = "0.6.1"
 description = "McCabe checker, plugin for flake8"
@@ -547,7 +555,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "3.6.9"
-content-hash = "52a0f6ffbd6d3e1a891f40a131f4b3a1177fa1d78991c4b0ba696651e7b7c683"
+content-hash = "0933c81053186e061b4e5e9d12ba818716d68824c6a8487d805f37d99ce6981a"
 
 [metadata.files]
 appdirs = [
@@ -675,6 +683,10 @@ iniconfig = [
 isort = [
     {file = "isort-5.9.1-py3-none-any.whl", hash = "sha256:8e2c107091cfec7286bc0f68a547d0ba4c094d460b732075b6fba674f1035c0c"},
     {file = "isort-5.9.1.tar.gz", hash = "sha256:83510593e07e433b77bd5bff0f6f607dbafa06d1a89022616f02d8b699cfcd56"},
+]
+light-the-torch = [
+    {file = "light_the_torch-0.3.1-py3-none-any.whl", hash = "sha256:33450293859ce293677153db42920e9c78f8a4561bb7272f7704aa65c2e798c6"},
+    {file = "light_the_torch-0.3.1.tar.gz", hash = "sha256:a30284975ba449c560e3432356095de37cf3c56022e9b1312e5b85e2fa3c906d"},
 ]
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
