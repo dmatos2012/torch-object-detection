@@ -23,7 +23,7 @@ jobs:
             pip install -r requirements-dev.txt
         - name: Lint
           run: |
-            flake8 . --show-source --statistics
+            flake8 . --config=.flake8 --show-source --statistics
             black . --check
             isort . --check-only --profile black
             bandit . 
