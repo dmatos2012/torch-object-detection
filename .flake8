@@ -6,7 +6,6 @@ exclude =
     coco128,
     archive/,
     minitrain/,
-    tests/
     __pycache__,
     utils/
 
