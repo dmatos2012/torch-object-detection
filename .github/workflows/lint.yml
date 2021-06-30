@@ -12,7 +12,7 @@ jobs:
         - name: Set up Python
           uses: actions/setup-python@v2
           with:
-            python-version: "3.6"
+            python-version: "3.6.9"
 
         - name: Checkout repository
           uses: actions/checkout@v2
@@ -25,8 +25,5 @@ jobs:
           run: |
             flake8 . --max-line-length=120 --max-complexity=10 --ignore=F405,F403,C901 --show-source --statistics
             black . --check
-            #isort . --check-only --profile black  weird errors?
+            isort . --check-only --profile black  #weird errors?
             bandit . 
-            # stop the build if there are Python syntax errors or undefined names
-            # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-            # flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics

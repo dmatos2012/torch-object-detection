@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image
 from torch.utils.data import Dataset
 
-from torch_object_detection.parser.parser_open_images import OpenImagesParser
+from .parser_open_images import OpenImagesParser
 
 
 class OpenImagesDataset(Dataset):

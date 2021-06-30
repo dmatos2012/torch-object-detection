@@ -3,11 +3,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torchvision
-from open_images_dataset import OpenImagesDataset
 from typing_extensions import OrderedDict
 
+from dataset.loader import create_loader
+from dataset.open_images_dataset import OpenImagesDataset
 from fasterrcnn import get_model
-from loader import create_loader
 
 interpolation = "bilinear"
 fill_color = "mean"

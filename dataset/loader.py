@@ -2,7 +2,7 @@ import torch
 import torch.utils
 import torch.utils.data
 
-from torch_object_detection.transforms import *
+from .transforms import *
 
 
 def my_collate_fn(batch):
