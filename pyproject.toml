@@ -1,3 +1,15 @@
+[tool.black]
+exclude = '''
+/(
+    \.git
+  | \.coco128
+  | \.archive
+  | \.coco128
+  | \.minitrain
+)/
+'''
+
+
 [tool.poetry]
 name = "torch-coco-detection"
 version = "0.1.0"

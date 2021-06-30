@@ -6,4 +6,3 @@ Use this repo to implement the following
 * Perform hyperparameter optimization - raytune perhaps (bayesian ?)
 * Perform some type of basic knowledge distillation/ quantization.
 * Deploy to AWS
-
