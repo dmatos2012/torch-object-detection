@@ -25,5 +25,5 @@ jobs:
           run: |
             flake8 . --max-line-length=120 --max-complexity=10 --ignore=F405,F403,C901 --show-source --statistics
             black . --check
-            isort . --profile black --diff --check-only  #weird errors?
+            isort .  --profile black --check-only
             bandit .

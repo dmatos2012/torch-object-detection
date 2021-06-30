@@ -2,10 +2,9 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 
 import pytest
-from typing_extensions import OrderedDict
-
 from torch_object_detection.dataset.open_images_dataset import OpenImagesDataset
 from torch_object_detection.dataset.parser_open_images import OpenImagesParser
+from typing_extensions import OrderedDict
 
 
 def dummy_parse(ann_file):
