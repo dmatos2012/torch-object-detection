@@ -31,7 +31,6 @@ class OpenImagesDataset(Dataset):
         img = Image.open(img_path).convert("RGB")
         if self.transform is not None:
             img, target = self.transform(img, target)
-        # print(target)
         return img, target
 
     def __len__(self):
