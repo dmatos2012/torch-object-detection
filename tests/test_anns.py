@@ -2,16 +2,14 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import numpy as np
+from dataset.parser_open_images import OpenImagesParser
 from numpy.testing import assert_array_equal
-from torch_object_detection.dataset.parser_open_images import OpenImagesParser
 
 
 class TestNetwork(TestCase):
     # @patch('pycocotools.coco.COCO.getAnnIds')
     @patch("pycocotools.coco.COCO")
-    @patch(
-        "torch_object_detection.dataset.parser_open_images.OpenImagesParser._load_annotations"
-    )
+    @patch("dataset.parser_open_images.OpenImagesParser._load_annotations")
     def test_img_anno(self, _, mock_coco):
         # input bbox in xywh format.
         ann = [

@@ -2,8 +2,8 @@ import unittest
 from unittest.mock import patch
 
 import numpy as np
+from dataset.transforms import RandomResizePad
 from PIL import Image
-from torch_object_detection.dataset.transforms import RandomResizePad
 
 
 class TestTransform(unittest.TestCase):
