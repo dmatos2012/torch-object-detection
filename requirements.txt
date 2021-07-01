@@ -1,8 +1,8 @@
 opencv-python==4.5.2.54
-Pillow==8.2.0
-pycocotools==2.0.2
+Pillow
 pytest==6.2.4
 pytest-cov==2.12.1
 torch==1.7.1+cu101
 torchvision==0.8.2+cu101
+pycocotools
 typing-extensions==3.10.0.0
