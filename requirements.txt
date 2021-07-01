@@ -4,3 +4,5 @@ opencv-python
 Pillow
 numpy==1.19.5
 pycocotools
+pytest
+pytest-cov
