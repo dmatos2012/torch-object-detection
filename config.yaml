@@ -2,7 +2,7 @@ num_epochs: 20
 num_workers: 2
 batch_size: 2
 input_size: 224
-
+root: "/home/david/fiftyone/open-images-v6"
 
 
 

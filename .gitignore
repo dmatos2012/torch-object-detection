@@ -1,5 +1,6 @@
 /coco128/
 /minitrain/
 /archive/
+/output/
 __pycache__
 /wandb/

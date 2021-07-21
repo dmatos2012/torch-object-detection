@@ -26,11 +26,11 @@ wandb.init(config=config, project="open-images-detection", entity="dmatos")
 def create_datasets_and_loaders(transform_train_fn=None):
     # input_size = 224  # input of image
     # batch_size = 2
-    root = Path("/home/david/fiftyone/open-images-v6")
+    root = Path(config.root)
     dataset_train, dataset_val = create_dataset(root)
     print(dataset_train.__len__())
     print(dataset_val.__len__())
-    visualize_input(dataset_train)
+    # visualize_input(dataset_train)
 
     loader_train = create_loader(
         dataset_train,
@@ -143,8 +143,6 @@ def train(model, optimizer, data_loader, device, epoch, print_freq):
             lr_scheduler.step()
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
-        if batch_idx == 3:
-            return metric_logger
 
     return metric_logger
 
