@@ -9,3 +9,4 @@ pytest-cov
 easydict
 PyYAML
 wandb
+typing_extensions==3.10.0
