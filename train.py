@@ -1,22 +1,31 @@
+import math
+import os
+import sys
 from pathlib import Path
 
 import cv2
 import numpy as np
-import torchvision
+import torch
+import wandb
 from dataset.loader import create_loader
 from dataset.open_images_dataset import OpenImagesDataset
+from easydict import EasyDict
 from fasterrcnn import get_model
 from typing_extensions import OrderedDict
+from utils import torch_utils
+from utils.load_config import load_yaml
 
-interpolation = "bilinear"
-fill_color = "mean"
-num_workers = 2
+yaml_config = "config.yaml"
+config = load_yaml(yaml_config)
+config = EasyDict(config)
+output_dir = os.path.join(os.getcwd(), "output")
+
+wandb.init(config=config, project="open-images-detection", entity="dmatos")
 
 
 def create_datasets_and_loaders(transform_train_fn=None):
-    input_size = 224  # input of image
-    batch_size = 2
-    num_workers = 2
+    # input_size = 224  # input of image
+    # batch_size = 2
     root = Path("/home/david/fiftyone/open-images-v6")
     dataset_train, dataset_val = create_dataset(root)
     print(dataset_train.__len__())
@@ -25,21 +34,21 @@ def create_datasets_and_loaders(transform_train_fn=None):
 
     loader_train = create_loader(
         dataset_train,
-        input_size,
-        batch_size,
-        interpolation=interpolation,
-        fill_color=fill_color,
-        num_workers=num_workers,
+        config.input_size,
+        config.batch_size,
+        interpolation=config.aug.interpolation,
+        fill_color=config.aug.fill_color,
+        num_workers=config.num_workers,
         is_training=True,
     )
 
     loader_val = create_loader(
         dataset_val,
-        input_size,
-        batch_size,
-        interpolation=interpolation,
-        fill_color=fill_color,
-        num_workers=num_workers,
+        config.input_size,
+        config.batch_size,
+        interpolation=config.aug.interpolation,
+        fill_color=config.aug.fill_color,
+        num_workers=config.num_workers,
         is_training=False,
     )
     return loader_train, loader_val
@@ -73,15 +82,89 @@ def create_dataset(root, splits=("train", "validation")):
 
 
 # print(loader)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = get_model()
 loader_train, loader_val = create_datasets_and_loaders()
+model.to(device)
+params = [p for p in model.parameters() if p.requires_grad]
+optimizer = torch.optim.SGD(
+    params,
+    lr=config.opt.lr,
+    momentum=config.opt.momentum,
+    weight_decay=config.opt.weight_decay,
+)
+lr_scheduler = torch.optim.lr_scheduler.StepLR(
+    optimizer, step_size=config.opt.step_size, gamma=config.opt.gamma
+)
 
 
-for input, target in loader_train:
-    # print(input[0].shape)
-    # print(input[1].shape)
-    output = model(input, target)
-    torchvision.utils.save_image(
-        list(input), "train-batch.jpg", padding=0, normalize=True
+def train(model, optimizer, data_loader, device, epoch, print_freq):
+    model.train()
+    metric_logger = torch_utils.MetricLogger(delimiter=" ")
+    metric_logger.add_meter(
+        "lr", torch_utils.SmoothedValue(window_size=1, fmt="{value:.6f}")
     )
-    print("saved image loader")
+    header = "Epoch: [{}]".format(epoch)
+
+    lr_scheduler = None
+
+    if epoch == 0:
+        warmup_factor = 1.0 / 1000
+        warmup_iters = min(1000, len(data_loader) - 1)
+
+        lr_scheduler = torch_utils.warmup_lr_scheduler(
+            optimizer, warmup_iters, warmup_factor
+        )
+
+    for batch_idx, (inputs, targets) in enumerate(
+        metric_logger.log_every(data_loader, print_freq, header)
+    ):
+        inputs = list(img.to(device) for img in inputs)
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        loss_dict = model(inputs, targets)
+        losses = sum(loss for loss in loss_dict.values())
+        loss_dict_reduced = torch_utils.reduce_dict(loss_dict)
+        losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+        loss_value = losses_reduced.item()
+        if batch_idx % print_freq == 0:
+            wandb.log({"loss": loss_value})
+        # torchvision.utils.save_image(list(inputs),
+        # "train%s-batch.jpg" %batch_idx, padding=0, normalize=True)
+        if not math.isfinite(loss_value):
+            print("Loss is {}, stopping training".format(loss_value))
+            print(loss_dict_reduced)
+            sys.exit(1)
+
+        optimizer.zero_grad()
+        losses.backward()
+        optimizer.step()
+
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+        metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
+        metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+        if batch_idx == 3:
+            return metric_logger
+
+    return metric_logger
+
+
+wandb.watch(model)
+for epoch in range(config.num_epochs):
+    train(model, optimizer, loader_train, device, epoch, print_freq=10)
+    if epoch % 2 == 0:
+        torch.save(
+            model.state_dict(), output_dir + "/" + "model_ckpt_epoch%s.pth" % epoch
+        )
+    lr_scheduler.step()
+
+
+# for input, target in loader_train:
+#     # print(input[0].shape)
+#     # print(input[1].shape)
+#     train()
+#     output = model(input, target)
+#     torchvision.utils.save_image(
+#         list(input), "train-batch.jpg", padding=0, normalize=True
+#     )
+#     print("saved image loader")

@@ -110,7 +110,9 @@ class RandomResizePad:
             anno["boxes"] = bbox[valid_indices, :]
             anno["labels"] = anno["labels"][valid_indices]
 
-        anno["img_scale"] = 1.0 / img_scale  # back to original
+        anno["img_scale"] = torch.as_tensor(
+            (1.0 / img_scale), dtype=torch.float32
+        )  # back to original
 
         return new_img, anno
 
@@ -122,9 +124,12 @@ class ToTensor(nn.Module):
         image = F.to_tensor(image)
         bbox = target.get("boxes")
         cls = target.get("labels")
-        bbox = torch.as_tensor(bbox, dtype=torch.float64)
+        img_idx = target.get("img_idx")
+        bbox = torch.as_tensor(bbox, dtype=torch.float32)
         cls = torch.as_tensor(cls, dtype=torch.int64)
-        target.update(boxes=bbox, labels=cls)
+        img_idx = torch.as_tensor(img_idx, dtype=torch.int64)
+        target.update(img_idx=img_idx, boxes=bbox, labels=cls)
+        target.pop("img_size")
         # print("target", target)
         return image, target
 
