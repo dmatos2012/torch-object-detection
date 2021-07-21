@@ -7,11 +7,10 @@ import cv2
 import numpy as np
 import torch
 import wandb
+from dataset.dataset_factory import create_dataset
 from dataset.loader import create_loader
-from dataset.open_images_dataset import OpenImagesDataset
 from easydict import EasyDict
 from fasterrcnn import get_model
-from typing_extensions import OrderedDict
 from utils import torch_utils
 from utils.load_config import load_yaml
 
@@ -72,16 +71,6 @@ def visualize_input(dataset):
     print("img created")
 
 
-def create_dataset(root, splits=("train", "validation")):
-    dataset_cls = OpenImagesDataset
-    datasets = OrderedDict()
-    for s in splits:
-        datasets[s] = dataset_cls(root, s)
-    datasets = list(datasets.values())
-    return datasets
-
-
-# print(loader)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = get_model()
 loader_train, loader_val = create_datasets_and_loaders()
@@ -152,17 +141,11 @@ for epoch in range(config.num_epochs):
     train(model, optimizer, loader_train, device, epoch, print_freq=10)
     if epoch % 2 == 0:
         torch.save(
-            model.state_dict(), output_dir + "/" + "model_ckpt_epoch%s.pth" % epoch
+            {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+            },
+            output_dir + "/" + "model_ckpt_epoch%s.pth" % epoch,
         )
     lr_scheduler.step()
-
-
-# for input, target in loader_train:
-#     # print(input[0].shape)
-#     # print(input[1].shape)
-#     train()
-#     output = model(input, target)
-#     torchvision.utils.save_image(
-#         list(input), "train-batch.jpg", padding=0, normalize=True
-#     )
-#     print("saved image loader")
