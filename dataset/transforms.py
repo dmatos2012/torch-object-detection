@@ -40,6 +40,100 @@ def _size_tuple(size):
         return size
 
 
+class RandomFlip:
+    def __init__(self, horizontal=True, vertical=False, prob=0.5):
+        self.horizontal = horizontal
+        self.vertical = vertical
+        self.prob = prob
+
+    def _get_params(self):
+        do_horizontal = random.random() < self.prob if self.horizontal else False
+        do_vertical = random.random() < self.prob if self.vertical else False
+        return do_horizontal, do_vertical
+
+    def __call__(self, img, annotations: dict):
+        do_horizontal, do_vertical = self._get_params()
+        width, height = img.size
+        img.save("beforeflip.jpg")
+
+        def _fliph(bbox):
+            x_max = width - bbox[:, 0]
+            x_min = width - bbox[:, 2]
+            bbox[:, 0] = x_min
+            bbox[:, 2] = x_max
+
+        def _flipv(bbox):
+            y_max = height - bbox[:, 1]
+            y_min = height - bbox[:, 3]
+            bbox[:, 1] = y_min
+            bbox[:, 3] = y_max
+
+        if do_horizontal and do_vertical:
+            img = img.transpose(Image.ROTATE_180)
+            if "boxes" in annotations:
+                _fliph(annotations["boxes"])
+                _flipv(annotations["boxes"])
+        elif do_horizontal:
+            img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            if "boxes" in annotations:
+                _fliph(annotations["boxes"])
+                # print("my flip", annotations["
+        elif do_vertical:
+            img = img.transpose(Image.FLIP_TOP_BOTTOM)
+            if "boxes" in annotations:
+                _flipv(annotations["boxes"])
+
+        return img, annotations
+
+
+class ResizePad:
+    def __init__(
+        self,
+        target_size: int,
+        interpolation: str = "bilinear",
+        fill_color: tuple = (0, 0, 0),
+    ):
+        self.target_size = _size_tuple(target_size)
+        self.interpolation = interpolation
+        self.fill_color = fill_color
+
+    def __call__(self, img, anno: dict):
+        width, height = img.size
+
+        img_scale_y = self.target_size[0] / height
+        img_scale_x = self.target_size[1] / width
+        img_scale = min(img_scale_y, img_scale_x)
+        scaled_h = int(height * img_scale)
+        scaled_w = int(width * img_scale)
+
+        new_img = Image.new(
+            "RGB", (self.target_size[1], self.target_size[0]), color=self.fill_color
+        )
+        interp_method = _pil_interp(self.interpolation)
+        img = img.resize((scaled_w, scaled_h), interp_method)
+        new_img.paste(img)  # pastes at 0,0 (upper-left corner)
+
+        if "boxes" in anno:
+            bbox = anno["boxes"]
+            bbox[:, :4] *= img_scale
+            bbox_bound = (
+                min(scaled_h, self.target_size[0]),
+                min(scaled_w, self.target_size[1]),
+            )
+            clip_boxes_(
+                bbox, bbox_bound
+            )  # crop to bounds of target image or letter-box, whichever is smaller
+            valid_indices = (bbox[:, :2] < bbox[:, 2:4]).all(axis=1)
+            anno["boxes"] = bbox[valid_indices, :]
+            anno["labels"] = anno["labels"][valid_indices]
+
+        anno["img_scale"] = torch.as_tensor(
+            (1.0 / img_scale), dtype=torch.float32
+        )  # back to original
+
+        return new_img, anno
+
+
 class RandomResizePad:
     def __init__(
         self,
@@ -167,6 +261,7 @@ def transforms_train(
 ):
     fill_color = resolve_fill_color(fill_color, mean)
     image_tfl = [
+        RandomFlip(horizontal=True, prob=0.5),
         RandomResizePad(
             target_size=img_size, interpolation=interpolation, fill_color=fill_color
         ),
@@ -186,7 +281,7 @@ def transforms_val(
 ):
     fill_color = resolve_fill_color(fill_color, mean)
     image_tfl = [
-        RandomResizePad(
+        ResizePad(
             target_size=img_size, interpolation=interpolation, fill_color=fill_color
         ),
         ToTensor(),

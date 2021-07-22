@@ -3,13 +3,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torchvision
 import torchvision.transforms.functional as F
 from dataset.dataset_factory import create_dataset
 from dataset.loader import create_loader
-
-# from utils.coco_evaluate import evaluate
 from easydict import EasyDict
 from fasterrcnn import get_model
+
+# from utils.coco_evaluate import evaluate
 from utils.load_config import load_yaml
 
 yaml_config = "config.yaml"
@@ -19,6 +20,7 @@ ckpt_name = "model_ckpt_epoch8.pth"
 ckpt_path = Path() / "output" / ckpt_name
 root = Path(config.root)
 dataset_val = create_dataset(root, splits=("validation"))
+config.batch_size = 2
 loader_val = create_loader(
     dataset_val,
     config.input_size,
@@ -45,40 +47,41 @@ def show(imgs):
 
 def load_ckpt(ckpt_path, device):
     model = get_model()
+    model.cuda()
+    params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(
-        model.parameters(), lr=config.opt.lr, momentum=config.opt.momentum
+        params,
+        lr=config.opt.lr,
+        momentum=config.opt.momentum,
+        weight_decay=config.opt.weight_decay,
     )
-    model.to(device)
     try:
         checkpoint = torch.load(str(ckpt_path))
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-        model.eval()
         print(f"{ckpt_path.name} loaded successfully")
+        return model
     except FileNotFoundError:
         print(f"could not find {ckpt_path}. Please enter valid ckpt")
-    return model
-
-
-# evaluate(model, loader_val, device=device)
-
-# pick one image from the test set
-img, _ = dataset_val[0]
-
-with torch.no_grad():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = load_ckpt(ckpt_path, device)
-    # model.eval()
-    pred_img = img.detach().clone()
-    prediction = model([pred_img.to(device)])[0]  # bc unique image
-    img = img.mul(255).to(torch.uint8)
-    boxes = prediction["boxes"]
-    labels = prediction["labels"]
-    print(prediction)
-    score_thr = 0.15
-    # res_img = torchvision.utils.draw_bounding_boxes(image=img,
-    #         boxes=prediction['boxes'][prediction['scores']>score_thr])
-    # show(res_img)
 
 
 # grid.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to('cpu', torch.uint8).numpy()
+if __name__ == "__main__":
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    new_model = load_ckpt(ckpt_path, device)
+    img, _ = dataset_val[2]
+    pred_img = img.detach().clone()
+    new_model.eval()
+    with torch.no_grad():
+        prediction = new_model([pred_img.to(device)])[0]  # bc unique image
+        # prediction = new_model([pred_img])[0]
+        img = img.mul(255).to(torch.uint8)
+        boxes = prediction["boxes"]
+        labels = prediction["labels"]
+        score_thr = 0.29
+        res_img = torchvision.utils.draw_bounding_boxes(
+            image=img, boxes=prediction["boxes"][prediction["scores"] > score_thr]
+        )
+        show(res_img)
+        # evaluate(new_model, loader_val, device=device)
+        print(prediction)

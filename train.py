@@ -12,6 +12,7 @@ from dataset.loader import create_loader
 from easydict import EasyDict
 from fasterrcnn import get_model
 from utils import torch_utils
+from utils.coco_evaluate import evaluate
 from utils.load_config import load_yaml
 
 yaml_config = "config.yaml"
@@ -137,6 +138,7 @@ def train(model, optimizer, data_loader, device, epoch, print_freq):
 
 
 wandb.watch(model)
+
 for epoch in range(config.num_epochs):
     train(model, optimizer, loader_train, device, epoch, print_freq=10)
     if epoch % 2 == 0:
@@ -148,4 +150,5 @@ for epoch in range(config.num_epochs):
             },
             output_dir + "/" + "model_ckpt_epoch%s.pth" % epoch,
         )
+        evaluate(model, loader_val, device=device)
     lr_scheduler.step()
