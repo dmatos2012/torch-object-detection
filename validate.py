@@ -16,11 +16,12 @@ from utils.load_config import load_yaml
 yaml_config = "config.yaml"
 config = load_yaml(yaml_config)
 config = EasyDict(config)
-ckpt_name = "model_ckpt_epoch8.pth"
+ckpt_name = "model_ckpt_epoch18.pth"
 ckpt_path = Path() / "output" / ckpt_name
 root = Path(config.root)
 dataset_val = create_dataset(root, splits=("validation"))
 config.batch_size = 2
+config.input_size = 512  # overriding for bumbling-monkey
 loader_val = create_loader(
     dataset_val,
     config.input_size,
@@ -69,7 +70,7 @@ def load_ckpt(ckpt_path, device):
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     new_model = load_ckpt(ckpt_path, device)
-    img, _ = dataset_val[2]
+    img, _ = dataset_val[100]
     pred_img = img.detach().clone()
     new_model.eval()
     with torch.no_grad():
@@ -78,7 +79,7 @@ if __name__ == "__main__":
         img = img.mul(255).to(torch.uint8)
         boxes = prediction["boxes"]
         labels = prediction["labels"]
-        score_thr = 0.29
+        score_thr = 0.75
         res_img = torchvision.utils.draw_bounding_boxes(
             image=img, boxes=prediction["boxes"][prediction["scores"] > score_thr]
         )
