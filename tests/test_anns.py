@@ -18,7 +18,7 @@ class TestNetwork(TestCase):
                 image_id=1,
                 category_id=160,
                 bbox=np.array(([10.0, 20.0, 30.0, 40.0])),
-                area=1520,
+                area=1200.0,
                 iscrowd=None,
             )
         ]
