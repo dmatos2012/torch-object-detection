@@ -45,6 +45,7 @@ class TestNetwork(TestCase):
         # mock_pil_image.assert_called()
 
         self.dataset = OpenImagesDataset("path_to_data", "dataset")
+        # TODO use create_dataset to test my dataset rather than OpenImagesDataset(dataset_factory.py)
         self.dataset.parser.img_infos = mock_data.parser.img_infos.return_value
         self.dataset.parser.img_ids = mock_data.parser.img_ids.return_value
         # print(self.dataset.__getitem__(0))

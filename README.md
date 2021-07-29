@@ -1,3 +1,5 @@
+![Tests](https://github.com/dmatos2012/torch-object-detection/actions/workflows/testing.yml/badge.svg)
+[![codecov](https://codecov.io/gh/dmatos2012/torch-object-detection/branch/master/graph/badge.svg)](https://codecov.io/gh/dmatos2012/torch-object-detection)
 ## Motivation
 Use this repo to implement the following
 * Git CI pipeline
@@ -6,3 +8,10 @@ Use this repo to implement the following
 * Perform hyperparameter optimization - raytune perhaps (bayesian ?)
 * Perform some type of basic knowledge distillation/ quantization.
 * Deploy to AWS
+
+
+## TODOs
+- [X] GIT CI pipeline
+- [ ] Log exp with W&B
+- [ ] Hyperparameter optimization
+- [ ] Deploy AWS
