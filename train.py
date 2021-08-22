@@ -117,7 +117,7 @@ def train(model, optimizer, data_loader, device, epoch, print_freq):
         losses_reduced = sum(loss for loss in loss_dict_reduced.values())
         loss_value = losses_reduced.item()
         if batch_idx % print_freq == 0:
-            wandb.log({"loss": loss_value})
+            wandb.log({"Train loss": loss_value})
         # torchvision.utils.save_image(list(inputs),
         # "train%s-batch.jpg" %batch_idx, padding=0, normalize=True)
         if not math.isfinite(loss_value):
@@ -133,14 +133,46 @@ def train(model, optimizer, data_loader, device, epoch, print_freq):
             lr_scheduler.step()
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+        wandb.log({"lr": optimizer.param_groups[0]["lr"]})
 
-    return metric_logger
+    return metric_logger, loss_value
+
+
+def validate(model, optimizer, data_loader, device, print_freq):
+    model.train()
+    for batch_idx, (inputs, targets) in enumerate(data_loader):
+        inputs = list(img.to(device) for img in inputs)
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        with torch.no_grad():
+            loss_dict = model(inputs, targets)
+            loss_dict_reduced = torch_utils.reduce_dict(loss_dict)
+            losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+            loss_value = losses_reduced.item()
+            if batch_idx % print_freq == 0:
+                wandb.log({"Validation loss": loss_value})
+            # torchvision.utils.save_image(list(inputs),
+            # "train%s-batch.jpg" %batch_idx, padding=0, normalize=True)
+            if not math.isfinite(loss_value):
+                print("Loss is {}, stopping training".format(loss_value))
+                print(loss_dict_reduced)
+                sys.exit(1)
+
+    return loss_value
 
 
 wandb.watch(model)
 
 for epoch in range(config.num_epochs):
-    train(model, optimizer, loader_train, device, epoch, print_freq=10)
+    _, train_loss_epoch = train(
+        model, optimizer, loader_train, device, epoch, print_freq=10
+    )
+    val_loss_epoch = validate(model, optimizer, loader_val, device, print_freq=10)
+    wandb.log(
+        {"Epoch Train Loss": train_loss_epoch, "Epoch Validation Loss": val_loss_epoch}
+    )
+    # losses = [[train_loss, val_loss]]
+    # table = wandb.Table(data=losses, columns=["Train Loss", "Validation Loss"])
+
     if epoch % 2 == 0:
         torch.save(
             {
@@ -150,5 +182,7 @@ for epoch in range(config.num_epochs):
             },
             output_dir + "/" + "model_ckpt_epoch%s.pth" % epoch,
         )
-        evaluate(model, loader_val, device=device)
+        _, coco_stats = evaluate(model, loader_val, device=device)
+        wandb.log({"IoU:0.50": coco_stats[1]})
+
     lr_scheduler.step()
