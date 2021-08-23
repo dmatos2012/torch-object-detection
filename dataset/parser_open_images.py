@@ -30,7 +30,7 @@ class OpenImagesParser:
                 cat_id: i + self.label_offset for i, cat_id in enumerate(self.cat_ids)
             }
         img_ids_with_ann = set(_["image_id"] for _ in self.coco.anns.values())
-        # for img_id in sorted(self.coco.imgs.keys())[:10]:
+        # for img_id in sorted(self.coco.imgs.keys())[:12]:
         for img_id in sorted(self.coco.imgs.keys()):
             info = self.coco.loadImgs([img_id])[0]
             if min(info["width"], info["height"]) < self.min_img_size or (

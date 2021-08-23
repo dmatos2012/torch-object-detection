@@ -54,7 +54,6 @@ class RandomFlip:
     def __call__(self, img, annotations: dict):
         do_horizontal, do_vertical = self._get_params()
         width, height = img.size
-        img.save("beforeflip.jpg")
 
         def _fliph(bbox):
             x_max = width - bbox[:, 0]

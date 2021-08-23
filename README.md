@@ -5,13 +5,13 @@ Use this repo to implement the following
 * Git CI pipeline
 * Train networks in order to detect dogs and cats
 * Log experiments to Weights & Biases
-* Perform hyperparameter optimization - raytune perhaps (bayesian ?)
+* Perform hyperparameter optimization - check methods
 * Perform some type of basic knowledge distillation/ quantization.
 * Deploy to AWS
 
 
 ## TODOs
 - [X] GIT CI pipeline
-- [ ] Log exp with W&B
+- [X] Log exp with W&B
 - [ ] Hyperparameter optimization
 - [ ] Deploy AWS

@@ -9,24 +9,36 @@ import torch
 import wandb
 from dataset.dataset_factory import create_dataset
 from dataset.loader import create_loader
-from easydict import EasyDict
 from fasterrcnn import get_model
 from utils import torch_utils
 from utils.coco_evaluate import evaluate
 from utils.load_config import load_yaml
 
 yaml_config = "config.yaml"
-config = load_yaml(yaml_config)
-config = EasyDict(config)
+hyp = load_yaml(yaml_config)
 output_dir = os.path.join(os.getcwd(), "output")
+sweep_config = {
+    "method": "random",
+    "metric": {"goal": "maximize", "name": "mAP_050"},
+    "parameters": {
+        "lr": {"values": [0.0005, 0.005, 0.010]},
+        "weight_decay": {"values": [0.0005, 0.005]},
+        "batch_size": {"values": [4, 8, 12]},
+        "input_size": {"values": [128, 224, 448]},
+        "num_epochs": {"values": [10, 15, 20]},
+    },
+}
+#   opt.opt:
+#     values: ["SGD", "Adam"]
 
-wandb.init(config=config, project="open-images-detection", entity="dmatos")
+# Now initialize the sweep
+sweep_id = wandb.sweep(sweep_config, project="open-images-detection")
 
 
-def create_datasets_and_loaders(transform_train_fn=None):
+def create_datasets_and_loaders(input_size, batch_size, transform_train_fn=None):
     # input_size = 224  # input of image
     # batch_size = 2
-    root = Path(config.root)
+    root = Path(hyp["root"])
     dataset_train, dataset_val = create_dataset(root)
     print(dataset_train.__len__())
     print(dataset_val.__len__())
@@ -34,21 +46,21 @@ def create_datasets_and_loaders(transform_train_fn=None):
 
     loader_train = create_loader(
         dataset_train,
-        config.input_size,
-        config.batch_size,
-        interpolation=config.aug.interpolation,
-        fill_color=config.aug.fill_color,
-        num_workers=config.num_workers,
+        input_size,
+        batch_size,
+        interpolation=hyp["interpolation"],
+        fill_color=hyp["fill_color"],
+        num_workers=hyp["num_workers"],
         is_training=True,
     )
 
     loader_val = create_loader(
         dataset_val,
-        config.input_size,
-        config.batch_size,
-        interpolation=config.aug.interpolation,
-        fill_color=config.aug.fill_color,
-        num_workers=config.num_workers,
+        input_size,
+        batch_size,
+        interpolation=hyp["interpolation"],
+        fill_color=hyp["fill_color"],
+        num_workers=hyp["num_workers"],
         is_training=False,
     )
     return loader_train, loader_val
@@ -72,20 +84,21 @@ def visualize_input(dataset):
     print("img created")
 
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-model = get_model()
-loader_train, loader_val = create_datasets_and_loaders()
-model.to(device)
-params = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.SGD(
-    params,
-    lr=config.opt.lr,
-    momentum=config.opt.momentum,
-    weight_decay=config.opt.weight_decay,
-)
-lr_scheduler = torch.optim.lr_scheduler.StepLR(
-    optimizer, step_size=config.opt.step_size, gamma=config.opt.gamma
-)
+# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# model = get_model()
+# loader_train, loader_val = create_datasets_and_loaders()
+# model.to(device)
+# params = [p for p in model.parameters() if p.requires_grad]
+# optimizer = torch.optim.SGD(
+#     params,
+#     lr=hyp["lr"],
+#     momentum=hyp["momentum"],
+#     weight_decay=hyp["weight_decay"],
+# )
+# lr_scheduler = torch.optim.lr_scheduler.StepLR(
+#     optimizer, step_size=hyp["step_size"], gamma=hyp["gamma"]
+# )
+#
 
 
 def train(model, optimizer, data_loader, device, epoch, print_freq):
@@ -139,6 +152,7 @@ def train(model, optimizer, data_loader, device, epoch, print_freq):
 
 
 def validate(model, optimizer, data_loader, device, print_freq):
+    # https://discuss.pytorch.org/t/compute-validation-loss-for-faster-rcnn/62333
     model.train()
     for batch_idx, (inputs, targets) in enumerate(data_loader):
         inputs = list(img.to(device) for img in inputs)
@@ -160,29 +174,62 @@ def validate(model, optimizer, data_loader, device, print_freq):
     return loss_value
 
 
-wandb.watch(model)
+print_freq = 10
 
-for epoch in range(config.num_epochs):
-    _, train_loss_epoch = train(
-        model, optimizer, loader_train, device, epoch, print_freq=10
-    )
-    val_loss_epoch = validate(model, optimizer, loader_val, device, print_freq=10)
-    wandb.log(
-        {"Epoch Train Loss": train_loss_epoch, "Epoch Validation Loss": val_loss_epoch}
-    )
-    # losses = [[train_loss, val_loss]]
-    # table = wandb.Table(data=losses, columns=["Train Loss", "Validation Loss"])
 
-    if epoch % 2 == 0:
-        torch.save(
-            {
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-            },
-            output_dir + "/" + "model_ckpt_epoch%s.pth" % epoch,
+def run_training():
+    with wandb.init(config=hyp, entity="dmatos"):
+        config = wandb.config
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        model = get_model()
+        wandb.watch(model)
+        loader_train, loader_val = create_datasets_and_loaders(
+            config["input_size"], config["batch_size"]
         )
-        _, coco_stats = evaluate(model, loader_val, device=device)
-        wandb.log({"IoU:0.50": coco_stats[1]})
+        model.to(device)
+        params = [p for p in model.parameters() if p.requires_grad]
+        optimizer = torch.optim.SGD(
+            params,
+            lr=config["lr"],
+            momentum=config["momentum"],
+            weight_decay=config["weight_decay"],
+        )
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=config["step_size"], gamma=config["gamma"]
+        )
+        for epoch in range(config["num_epochs"]):
+            # run_url = wandb.run.get_url()
+            _, train_loss_epoch = train(
+                model, optimizer, loader_train, device, epoch, print_freq=print_freq
+            )
+            val_loss_epoch = validate(
+                model, optimizer, loader_val, device, print_freq=print_freq
+            )
+            wandb.log(
+                {
+                    "Epoch Train Loss": train_loss_epoch,
+                    "Epoch Validation Loss": val_loss_epoch,
+                }
+            )
+            # losses = [[train_loss, val_loss]]
+            # table = wandb.Table(data=losses, columns=["Train Loss", "Validation Loss"])
 
-    lr_scheduler.step()
+            if ((epoch + 1) % 5 == 0) or epoch == 0:
+                torch.save(
+                    {
+                        "epoch": epoch,
+                        "model_state_dict": model.state_dict(),
+                        "optimizer_state_dict": optimizer.state_dict(),
+                    },
+                    output_dir
+                    + "/"
+                    + "model_ckpt_epoch%s_sweep%s.pth" % (epoch, sweep_id),
+                )
+                _, coco_stats = evaluate(model, loader_val, device=device)
+                wandb.log({"mAP_050": coco_stats[1]})
+
+            lr_scheduler.step()
+
+
+count = 5
+wandb.agent(sweep_id, function=run_training, count=count)

@@ -23,7 +23,7 @@ jobs:
             pip install -r requirements-dev.txt
         - name: Lint
           run: |
-            flake8 . --max-line-length=120 --max-complexity=10 --ignore=F405,F403,C901 --show-source --statistics
+            flake8 . --max-line-length=120 --max-complexity=10 --extend-ignore=E203,F405,F403,C901 --show-source --statistics
             black . --check
             isort .  --profile black --check-only
             bandit .
