@@ -84,23 +84,6 @@ def visualize_input(dataset):
     print("img created")
 
 
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# model = get_model()
-# loader_train, loader_val = create_datasets_and_loaders()
-# model.to(device)
-# params = [p for p in model.parameters() if p.requires_grad]
-# optimizer = torch.optim.SGD(
-#     params,
-#     lr=hyp["lr"],
-#     momentum=hyp["momentum"],
-#     weight_decay=hyp["weight_decay"],
-# )
-# lr_scheduler = torch.optim.lr_scheduler.StepLR(
-#     optimizer, step_size=hyp["step_size"], gamma=hyp["gamma"]
-# )
-#
-
-
 def train(model, optimizer, data_loader, device, epoch, print_freq):
     model.train()
     metric_logger = torch_utils.MetricLogger(delimiter=" ")
